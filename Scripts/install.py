@@ -1,4 +1,5 @@
 from pyspark.sql import SparkSession
+
 spark = SparkSession.builder.getOrCreate()
 from pyspark.sql import Row
 data=(
@@ -9,3 +10,7 @@ data=(
 )
 data=spark.createDataFrame(data)
 data.show()
+
+# data.write.parquet("prueba")
+
+
