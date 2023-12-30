@@ -1,90 +1,85 @@
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.getOrCreate()
+from pyspark.sql import *
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
 
-# Databricks notebook source
-# MAGIC %md
-# MAGIC ### Ingest circuits.csv file
+spark = SparkSession.builder.appName("ReadXML").getOrCreate()
 
-# COMMAND ----------
+products_json = "/workspaces/MaquinaPrueba/DatosBase/Products.json"
 
-# MAGIC %md
-# MAGIC ##### Step 1 - Read the CSV file using the spark dataframe reader
-
-# COMMAND ----------
-
-from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DoubleType
-
-# COMMAND ----------
-
-circuits_schema = StructType(fields=[StructField("circuitId", IntegerType(), False),
-                                     StructField("circuitRef", StringType(), True),
-                                     StructField("name", StringType(), True),
-                                     StructField("location", StringType(), True),
-                                     StructField("country", StringType(), True),
-                                     StructField("lat", DoubleType(), True),
-                                     StructField("lng", DoubleType(), True),
-                                     StructField("alt", IntegerType(), True),
-                                     StructField("url", StringType(), True)
+products_schema = StructType(fields=[
+        StructField("ProductID", IntegerType(),False),
+        StructField("Name", StringType()),
+        StructField("ProductNumber", StringType()),
+        StructField("MakeFlag", StringType()),
+        StructField("FinishedGoodsFlag", StringType()),
+        StructField("Color", StringType()),
+        StructField("SafetyStockLevel", IntegerType()),
+        StructField("ReorderPoint", IntegerType()),
+        StructField("StandardCost", DecimalType(8,2)),
+        StructField("ListPrice", StringType()),
+        StructField("Size", StringType()),
+        StructField("SizeUnitMeasureCode",StringType()),
+        StructField("WeightUnitMeasureCode",StringType()),
+        StructField("Weight",StringType()),
+        StructField("DaysToManufacture",StringType()),
+        StructField("ProductLine",StringType()),
+        StructField("Class",StringType()),
+        StructField("Style",StringType()),
+        StructField("ProductSubcategoryID",StringType()),
+        StructField("ProductModelID",StringType()),
+        StructField("SellStartDate",StringType()),
+        StructField("SellEndDate",StringType()), 
+        StructField("DiscontinuedDate",StringType()),
+        StructField("rowguid",StringType()),
+        StructField("ModifiedDate",StringType())
 ])
 
-# COMMAND ----------
+products_df = spark.read \
+.schema(products_schema) \
+.option("multiLine",True) \
+.json(products_json)
 
-circuits_df = spark.read \
-.option("header", True) \
-.schema(circuits_schema) \
-.csv("./raw/circuits.csv")
+#products_df.printSchema()
+#products_df.show(10)
 
-# COMMAND ----------
+#seleccionar ñp que necesitamos.
 
-# MAGIC %md
-# MAGIC ##### Step 2 - Select only the required columns
+products_selected_df = products_df.select \
+ ( \
+     col("ProductID"), \
+     col("Name").alias("NombreProducto"), \
+     col("MakeFlag").alias("EnProduccion"), \
+     col("Color").alias("Color_"), \
+     col("ListPrice").alias("PrecioCatalogo"), \
+     col("Size").alias("Tamano"), \
+     col("Weight").alias("Peso"), \
+     col("Class").alias("Clase"), \
+     col("Style").alias("Estilo"), \
+     col("ProductSubCategoryID").alias("SubCatID"), \
+     col("SellStartDate").alias("InicioVenta_"), \
+     col("SellEndDate").alias("FinalVenta_") \
+ )
 
-# COMMAND ----------
+products_cleanNULL_df = products_selected_df \
+        .fillna({ \
+            "Color_" : "Trans", \
+            "Tamano" : "ST", \
+            "Peso" : 0, \
+            "Clase" : "SC", \
+            "Estilo" : "SE"
+         })
+products_df = products_cleanNULL_df.withColumn("EnProd",when(products_cleanNULL_df.EnProduccion == 1,True).otherwise(False))
 
-from pyspark.sql.functions import col
+products_df = products_df.withColumn("Color" \
+              ,when(ucase(products_df.Color_) == "ROJO","Red") \
+              .when(ucase(products_df.Color_) == "PLATA","Silver") \
+              .when(ucase(products_df.Color_) == "AMBAR","Yellow") \
+              .otherwise(products_df.Color_)  )
+products_df = products_df.withColumn("InicioVenta" \
+              ,to_date(products_df.InicioVenta_))
+              
+columns_to_drop = ['Color_', 'EnProduccion', 'InicioVenta_']
+products_df = products_df.drop(*columns_to_drop)
+products_df.show(200)
 
-# COMMAND ----------
-
-circuits_selected_df = circuits_df.select(col("circuitId"), col("circuitRef"), col("name"), col("location"), col("country"), col("lat"), col("lng"), col("alt"))
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ##### Step 3 - Rename the columns as required
-
-# COMMAND ----------
-
-circuits_renamed_df = circuits_selected_df.withColumnRenamed("circuitId", "circuit_id") \
-.withColumnRenamed("circuitRef", "circuit_ref") \
-.withColumnRenamed("lat", "latitude") \
-.withColumnRenamed("lng", "longitude") \
-.withColumnRenamed("alt", "altitude") 
-
-# COMMAND ----------
-
-# MAGIC %md 
-# MAGIC ##### Step 4 - Add ingestion date to the dataframe
-
-# COMMAND ----------
-
-from pyspark.sql.functions import current_timestamp
-
-# COMMAND ----------
-
-circuits_final_df = circuits_renamed_df.withColumn("ingestion_date", current_timestamp()) 
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ##### Step 5 - Write data to datalake as parquet
-circuits_final_df.show()
-# COMMAND ----------
-
-circuits_final_df.write.format('com.databricks.spark.csv').mode('overwrite').option("header", "true").save("./parquet/circuits.csv")
-
-# COMMAND ----------
-
-circuits_df = spark.read .option("header", True) .csv("./parquet/circuits.csv")
-circuits_df.show();
-# COMMAND ----------
-
+products_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Bronce/Products")
