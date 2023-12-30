@@ -66,7 +66,8 @@ products_cleanNULL_df = products_selected_df \
             "Tamano" : "ST", \
             "Peso" : 0, \
             "Clase" : "SC", \
-            "Estilo" : "SE"
+            "Estilo" : "SE", \
+            "SubCatID" : -1 \
          })
 products_df = products_cleanNULL_df.withColumn("EnProd",when(products_cleanNULL_df.EnProduccion == 1,True).otherwise(False))
 
@@ -80,6 +81,6 @@ products_df = products_df.withColumn("InicioVenta" \
               
 columns_to_drop = ['Color_', 'EnProduccion', 'InicioVenta_']
 products_df = products_df.drop(*columns_to_drop)
-products_df.show(200)
+products_df.show(2000)
 
 products_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Bronce/Products")
