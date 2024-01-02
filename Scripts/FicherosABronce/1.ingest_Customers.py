@@ -2,7 +2,7 @@ from pyspark.sql import *
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
 
-spark = SparkSession.builder.appName("ReadXML").getOrCreate()
+spark = SparkSession.builder.appName("ReadCSV").getOrCreate()
 sc = SQLContext(spark)
 
 customer_json = "/workspaces/MaquinaPrueba/DatosBase/Customers.csv"
@@ -23,13 +23,10 @@ customer_df = customer_df \
             "TerritoryID" : -1
          })
 
-timestamp_actual = current_date()
 columnas = ['CustomerID', 'PersonID', 'TerritoryID']
-newRow = spark.createDataFrame([(-1, -1, -1)], columnas)
+newRow = spark.createDataFrame([(-1, -1, -1),(-2, -2, -2,)], columnas)
 customer_df = customer_df.union(newRow)
-newRow = spark.createDataFrame([(-2, -2, -2,)], columnas)
-customer_df = customer_df.union(newRow)
-#customer_df.printSchema()
-#customer_df.show(100)
+
+customer_df.show(10)
 customer_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Bronce/Customers")
 

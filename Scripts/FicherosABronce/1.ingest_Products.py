@@ -16,11 +16,11 @@ products_schema = StructType(fields=[
         StructField("SafetyStockLevel", IntegerType()),
         StructField("ReorderPoint", IntegerType()),
         StructField("StandardCost", DecimalType(8,2)),
-        StructField("ListPrice", StringType()),
+        StructField("ListPrice", DecimalType(8,2)),
         StructField("Size", StringType()),
         StructField("SizeUnitMeasureCode",StringType()),
         StructField("WeightUnitMeasureCode",StringType()),
-        StructField("Weight",StringType()),
+        StructField("Weight",DecimalType(8,2)),
         StructField("DaysToManufacture",StringType()),
         StructField("ProductLine",StringType()),
         StructField("Class",StringType()),
@@ -39,12 +39,7 @@ products_df = spark.read \
 .option("multiLine",True) \
 .json(products_json)
 
-#products_df.printSchema()
-#products_df.show(10)
-
-#seleccionar ñp que necesitamos.
-
-products_selected_df = products_df.select \
+products_df = products_df.select \
  ( \
      col("ProductID"), \
      col("Name").alias("NombreProducto"), \
@@ -55,32 +50,38 @@ products_selected_df = products_df.select \
      col("Weight").alias("Peso"), \
      col("Class").alias("Clase"), \
      col("Style").alias("Estilo"), \
-     col("ProductSubCategoryID").alias("SubCatID"), \
-     col("SellStartDate").alias("InicioVenta_"), \
-     col("SellEndDate").alias("FinalVenta_") \
+     col("ProductSubCategoryID").alias("SubCatID") \
  )
 
-products_cleanNULL_df = products_selected_df \
+products_df = products_df \
         .fillna({ \
-            "Color_" : "Trans", \
-            "Tamano" : "ST", \
+            "Color_" : "Sin Color", \
+            "Tamano" : "Sin Tamaño", \
             "Peso" : 0, \
-            "Clase" : "SC", \
-            "Estilo" : "SE", \
+            "Clase" : "Sin Clase", \
+            "Estilo" : "Sin Estilo", \
             "SubCatID" : -1 \
          })
-products_df = products_cleanNULL_df.withColumn("EnProd",when(products_cleanNULL_df.EnProduccion == 1,True).otherwise(False))
 
 products_df = products_df.withColumn("Color" \
               ,when(ucase(products_df.Color_) == "ROJO","Red") \
               .when(ucase(products_df.Color_) == "PLATA","Silver") \
               .when(ucase(products_df.Color_) == "AMBAR","Yellow") \
               .otherwise(products_df.Color_)  )
-products_df = products_df.withColumn("InicioVenta" \
-              ,to_date(products_df.InicioVenta_))
-              
-columns_to_drop = ['Color_', 'EnProduccion', 'InicioVenta_']
+columns_to_drop = ['Color_']
 products_df = products_df.drop(*columns_to_drop)
-products_df.show(2000)
+
+columnas = ['ProductID', 'NombreProducto','PrecioCatalogo','Tamano','Peso','Clase','Estilo','SubCatID','Color','EnProduccion']
+newRow = spark.createDataFrame( \
+    [ \
+    (-1, "Producto No Informado ",0.0,"Sin Tamaño",0,"Sin Clase","Sin Estilo",-1,"Sin Color","0"), \
+    (-2, "Producto No Encontrado",0.0,"Sin Tamaño",0,"Sin Clase","Sin Estilo",-1,"Sin Color","0") \
+    ], columnas)
+products_df = products_df.union(newRow)
+products_df = products_df.withColumn("EnProd",when(products_df.EnProduccion == 1,True).otherwise(False))
+columns_to_drop = ['EnProduccion_']
+products_df = products_df.drop(*columns_to_drop)
+products_df.printSchema()
+products_df.show(600)
 
 products_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Bronce/Products")

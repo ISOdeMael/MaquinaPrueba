@@ -2,7 +2,7 @@ from pyspark.sql import *
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
 
-spark = SparkSession.builder.appName("ReadXML").getOrCreate()
+spark = SparkSession.builder.appName("ReadCSV").getOrCreate()
 
 Category_csv = "/workspaces/MaquinaPrueba/DatosBase/ProductsCategory.csv"
 
@@ -21,9 +21,7 @@ Category_df = Category_df.select \
  )
 
 columnas = ['CategoryID', 'NombreCategoria']
-newRow = spark.createDataFrame([(-1, "Categoria No Informada")], columnas)
-Category_df = Category_df.union(newRow)
-newRow = spark.createDataFrame([(-2, "Categoria No Encontrada")], columnas)
+newRow = spark.createDataFrame([(-1, "Categoria No Informada"),(-2, "Categoria No Encontrada") ], columnas)
 Category_df = Category_df.union(newRow)
 
 Category_df.show(100)
