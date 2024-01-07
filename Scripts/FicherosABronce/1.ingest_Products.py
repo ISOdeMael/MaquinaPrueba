@@ -50,7 +50,7 @@ products_df = products_df.select \
      col("Weight").alias("Peso"), \
      col("Class").alias("Clase"), \
      col("Style").alias("Estilo"), \
-     col("ProductSubCategoryID").alias("SubCatID") \
+     col("ProductSubCategoryID").alias("SubCatID")\
  )
 
 products_df = products_df \
@@ -71,17 +71,17 @@ products_df = products_df.withColumn("Color" \
 columns_to_drop = ['Color_']
 products_df = products_df.drop(*columns_to_drop)
 
-columnas = ['ProductID', 'NombreProducto','PrecioCatalogo','Tamano','Peso','Clase','Estilo','SubCatID','Color','EnProduccion']
+columnas = ['ProductID', 'NombreProducto','EnProduccion','PrecioCatalogo','Tamano','Peso','Clase','Estilo','SubCatID','Color']
 newRow = spark.createDataFrame( \
     [ \
-    (-1, "Producto No Informado ",0.0,"Sin Tamaño",0,"Sin Clase","Sin Estilo",-1,"Sin Color","0"), \
-    (-2, "Producto No Encontrado",0.0,"Sin Tamaño",0,"Sin Clase","Sin Estilo",-1,"Sin Color","0") \
+    (-1, "Producto No Informado ","0",0,"Sin Tamaño",0,"Sin Clase","Sin Estilo",'-1',"Sin Color"), \
+    (-2, "Producto No Encontrado","0",0,"Sin Tamaño",0,"Sin Clase","Sin Estilo",'-2',"Sin Color") \
     ], columnas)
 products_df = products_df.union(newRow)
 products_df = products_df.withColumn("EnProd",when(products_df.EnProduccion == 1,True).otherwise(False))
 columns_to_drop = ['EnProduccion_']
 products_df = products_df.drop(*columns_to_drop)
-products_df.printSchema()
-products_df.show(600)
+#products_df.printSchema()
+#products_df.show(600)
 
 products_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Bronce/Products")

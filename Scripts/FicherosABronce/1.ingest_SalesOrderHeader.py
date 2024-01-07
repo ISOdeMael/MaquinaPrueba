@@ -11,24 +11,42 @@ salesHeader_df = sc.read.option("delimiter", ";").option("header",True).option("
 
 salesHeader_df = salesHeader_df.select \
  ( \
-    salesHeader_df.SalesOrderID, \
-    salesHeader_df.OrderDate.cast(DateType()).alias("FechaPedido"), \
-    salesHeader_df.DueDate.cast(DateType()).alias("FechaVenc"), \
-    salesHeader_df.ShipDate.cast(DateType()).alias("FechaEnv"), \
+    salesHeader_df.SalesOrderID.alias("OrderID"), \
+    salesHeader_df.OrderDate.cast(DateType()).alias("FechaPedido_"), \
+    salesHeader_df.DueDate.cast(DateType()).alias("FechaVenc_"), \
+    salesHeader_df.ShipDate.cast(DateType()).alias("FechaEnv_"), \
     salesHeader_df.Status, \
     salesHeader_df.CustomerID, \
     salesHeader_df.TerritoryID, \
-    salesHeader_df.ShipMethodID, \
-    salesHeader_df.ModifiedDate.cast(DateType()).alias("FechaMod")
+    salesHeader_df.ShipMethodID
  )
+
+salesHeader_df = salesHeader_df.withColumn("FechaPedido",( \
+    year(salesHeader_df.FechaPedido_)*10000 + \
+    month(salesHeader_df.FechaPedido_)*100 + \
+    day(salesHeader_df.FechaPedido_)))
+
+salesHeader_df = salesHeader_df.withColumn("FechaVenc",( \
+    year(salesHeader_df.FechaVenc_)*10000 + \
+    month(salesHeader_df.FechaVenc_)*100 + \
+    day(salesHeader_df.FechaVenc_)))
+
+salesHeader_df = salesHeader_df.withColumn("FechaEnv",( \
+    year(salesHeader_df.FechaEnv_)*10000 + \
+    month(salesHeader_df.FechaEnv_)*100 + \
+    day(salesHeader_df.FechaEnv_)))
 
 salesHeader_df = salesHeader_df \
         .fillna({ \
             "CustomerID" : -1, \
             "TerritoryID" : -1
          })
-salesHeader_df.printSchema()
-salesHeader_df.show(1)
+#salesHeader_df.printSchema()
+
+
+columns_to_drop = ['FechaPedido_','FechaVenc_','FechaEnv_']
+salesHeader_df = salesHeader_df.drop(*columns_to_drop)
 
 salesHeader_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Bronce/SalesHeader")
 
+salesHeader_df.show(10)

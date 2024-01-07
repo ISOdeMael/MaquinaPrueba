@@ -33,7 +33,7 @@ person_df = spark.read \
 #seleccionar ñp que necesitamos.
 
 person_df = person_df.select ( \
-    person_df.BusinessEntityID.alias("PersonId"), \
+    person_df.BusinessEntityID.alias("PersonID"), \
     person_df.PersonType, \
     concat( \
         when(person_df.Title.isNull(), lit(" ")).otherwise(person_df.Title), \
@@ -50,6 +50,6 @@ newRow = spark.createDataFrame( \
     (-2, "","Persona No Encontrada") \
     ], columnas)
 person_df = person_df.union(newRow)
-#person_df.show(1000000)
+person_df.show(1000000)
 
 person_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Bronce/Person")

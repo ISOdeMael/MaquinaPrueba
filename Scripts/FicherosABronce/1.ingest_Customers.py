@@ -27,6 +27,6 @@ columnas = ['CustomerID', 'PersonID', 'TerritoryID']
 newRow = spark.createDataFrame([(-1, -1, -1),(-2, -2, -2,)], columnas)
 customer_df = customer_df.union(newRow)
 
-customer_df.show(10)
+customer_df.show(10000)
 customer_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Bronce/Customers")
 
