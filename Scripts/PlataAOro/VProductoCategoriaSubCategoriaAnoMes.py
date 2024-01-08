@@ -16,7 +16,7 @@ dim_fecha_df = sc.read.parquet(dim_fecha_parquet)
 fact_ventas_parquet = "/workspaces/MaquinaPrueba/Plata/FactVentas"
 fact_ventas_df = sc.read.parquet(fact_ventas_parquet)
 
-#tomamos la información que necesitemos.
+#tomamos la información que necesitamos.
 fact_ventas_df = fact_ventas_df.select \
 ( \
     fact_ventas_df.TotalLinea, \
@@ -41,5 +41,12 @@ fact_ventas_df = sc.sql("SELECT ProductID,Ano,NombreMes,Mes,SUM(TotalLinea) as T
 fact_ventas_df = fact_ventas_df.join(dim_productos_df,fact_ventas_df.ProductID == dim_productos_df.ProductID)
 columns_to_drop = ['PrecioCatalogo','Tamano','Peso','Clase','Estilo','Color','EnProd','ProductID']
 fact_ventas_df = fact_ventas_df.drop(*columns_to_drop)
-fact_ventas_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Oro/VProductoAnoMes")
+fact_ventas_df.show(100)
+
+fact_ventas_df.createOrReplaceTempView("FactVentas")
+fact_ventas_df = sc.sql("SELECT NombreCategoria,NombreSubCategoria,Ano,NombreMes,Mes,SUM(TotalProducto) as Total \
+                         FROM FactVentas \
+                         GROUP BY Ano,NombreMes,Mes,NombreCategoria,NombreSubCategoria ")
+
+fact_ventas_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Oro/VProductoCategoriaSubcategoriaMesAno")
 fact_ventas_df.show(100)
