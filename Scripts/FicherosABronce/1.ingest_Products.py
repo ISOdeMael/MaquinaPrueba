@@ -6,6 +6,7 @@ spark = SparkSession.builder.appName("ReadXML").getOrCreate()
 
 products_json = "/workspaces/MaquinaPrueba/DatosBase/Products.json"
 
+# Si se pone todo como String. 
 products_schema = StructType(fields=[
         StructField("ProductID", IntegerType(),False),
         StructField("Name", StringType()),
@@ -38,6 +39,10 @@ products_df = spark.read \
 .schema(products_schema) \
 .option("multiLine",True) \
 .json(products_json)
+
+products_df.show()
+#products_df.display()
+#display(prodycts_df)
 
 products_df = products_df.select \
  ( \
@@ -78,10 +83,11 @@ newRow = spark.createDataFrame( \
     (-2, "Producto No Encontrado","0",0,"Sin Tamaño",0,"Sin Clase","Sin Estilo",'-2',"Sin Color") \
     ], columnas)
 products_df = products_df.union(newRow)
+
 products_df = products_df.withColumn("EnProd",when(products_df.EnProduccion == 1,True).otherwise(False))
 columns_to_drop = ['EnProduccion_']
 products_df = products_df.drop(*columns_to_drop)
-#products_df.printSchema()
-#products_df.show(600)
+products_df.printSchema()
+products_df.show(600)
 
 products_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Bronce/Products")

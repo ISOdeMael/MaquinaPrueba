@@ -27,4 +27,4 @@ complete_df = productWithSubcategory_df.join(category_df, productWithSubcategory
 columns_to_drop = ['SubCatID','CategoryID']
 complete_df = complete_df.drop(*columns_to_drop)
 complete_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Plata/DimProducto")
-complete_df.show(10)
+complete_df.show(100)
