@@ -41,6 +41,6 @@ salesDetail_df = salesDetail_df.select \
     salesDetail_df.FechaMod 
 )
 salesDetail_df.write.mode("overwrite").parquet("/workspaces/MaquinaPrueba/Bronce/SalesDetail")
-
+salesDetail_df.show()
 
 
